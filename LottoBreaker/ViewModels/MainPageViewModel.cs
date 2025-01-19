@@ -1,30 +1,15 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
+﻿using HtmlAgilityPack;
+using System;
 using System.Collections.ObjectModel;
-using HtmlAgilityPack;
 using System.Net.Http;
-using System.ComponentModel;
+using System.Linq;
 using System.Windows.Input;
 
 namespace LottoBreaker.ViewModels
 {
-
-    public class MainPageViewModel : INotifyPropertyChanged
+    public class MainPageViewModel
     {
-        private ObservableCollection<string> _unclaimedPrizes = new ObservableCollection<string>();
-
-        public ObservableCollection<string> UnclaimedPrizes
-        {
-            get => _unclaimedPrizes;
-            set
-            {
-                if (_unclaimedPrizes != value)
-                {
-                    _unclaimedPrizes = value;
-                    OnPropertyChanged(nameof(UnclaimedPrizes));
-                }
-            }
-        }
+        public ObservableCollection<string> UnclaimedPrizes { get; set; } = new ObservableCollection<string>();
 
         public ICommand LoadDataCommand { get; }
 
@@ -35,84 +20,61 @@ namespace LottoBreaker.ViewModels
 
         public async Task LoadDataAsync()
         {
-            Console.WriteLine("boo");
-            // Simulate fetching data, replace this with your actual data loading logic
+            System.Diagnostics.Debug.WriteLine("LoadDataAsync method started.");
 
             var client = new HttpClient();
-            var response = await client.GetAsync("https://www.mainelottery.com/players_info/unclaimed_prizes.html");
-          
-            if (response.IsSuccessStatusCode)
+            var request = new HttpRequestMessage
             {
-               
-                var content = await response.Content.ReadAsStringAsync();
-                var doc = new HtmlAgilityPack.HtmlDocument();
-                doc.LoadHtml(content);
-                // Parse the HTML to get unclaimed prizes. This is very basic and needs refinement based on actual HTML structure.
-                //UnclaimedPrizes.Clear();
-                var nodes = doc.DocumentNode.SelectNodes("//div[@class='maincontent1']");
-                if (nodes != null)
+                Method = HttpMethod.Get,
+                RequestUri = new Uri("https://www.mainelottery.com/players_info/unclaimed_prizes.html")
+            };
+
+            try
+            {
+                using (var response = await client.SendAsync(request))
                 {
-                    foreach (var node in nodes)
+                    System.Diagnostics.Debug.WriteLine("HTTP Response Status Code: " + response.StatusCode);
+                    response.EnsureSuccessStatusCode();
+                    var body = await response.Content.ReadAsStringAsync();
+                    System.Diagnostics.Debug.WriteLine("Response body length: " + body.Length);
+
+                    var doc = new HtmlDocument();
+                    doc.LoadHtml(body);
+
+                    var prizeNodes = doc.DocumentNode.SelectNodes("//table[@class='tbstriped']/tr");
+                    if (prizeNodes != null)
                     {
-                       
-                        UnclaimedPrizes.Add(node.InnerText.Trim());
+                        foreach (var node in prizeNodes)
+                        {
+                            var cells = node.SelectNodes("td"); // This can return null if there are no td elements
+                            if (cells != null)
+                            {
+                                // Joining cells with a separator, but check if cells has elements
+                                var prizeInfo = cells.Any() ? string.Join(" - ", cells.Select(c => c.InnerText.Trim())) : string.Empty;
+                                if (!string.IsNullOrEmpty(prizeInfo))
+                                {
+                                    UnclaimedPrizes.Add(prizeInfo);
+                                    System.Diagnostics.Debug.WriteLine("Added prize: " + prizeInfo);
+                                }
+                            }
+                        }
+                        System.Diagnostics.Debug.WriteLine("Number of unclaimed prizes added: " + UnclaimedPrizes.Count);
+                    }
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine("No prize data found or table structure not as expected.");
                     }
                 }
             }
-        }
-
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        protected virtual void OnPropertyChanged(string propertyName)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            catch (HttpRequestException ex)
+            {
+                System.Diagnostics.Debug.WriteLine("HTTP Request Error: " + ex.Message);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("An error occurred: " + ex.Message);
+            }
+            System.Diagnostics.Debug.WriteLine("LoadDataAsync method completed.");
         }
     }
-
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
