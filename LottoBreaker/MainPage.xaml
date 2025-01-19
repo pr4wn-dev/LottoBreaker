@@ -1,19 +1,41 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-        xmlns:viewModels="clr-namespace:LottoBreaker.ViewModels"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewModels="clr-namespace:LottoBreaker.ViewModels"
              x:Class="LottoBreaker.MainPage">
     <ContentPage.BindingContext>
         <viewModels:MainPageViewModel />
     </ContentPage.BindingContext>
     <StackLayout>
-        <Button Text="Load Data" Command="{Binding LoadDataCommand}" />
-        <CollectionView ItemsSource="{Binding UnclaimedPrizes}">
-            <CollectionView.ItemTemplate>
-                <DataTemplate>
-                    <Label Text="{Binding .}" />
-                </DataTemplate>
-            </CollectionView.ItemTemplate>
-        </CollectionView>
+        <!-- Button to trigger data loading -->
+        <Button Text="Load Data" 
+                Command="{Binding LoadDataCommand}"
+                HorizontalOptions="Center"
+                Margin="10"/>
+
+        <!-- ScrollView for the table -->
+        <ScrollView Orientation="Vertical" HorizontalScrollBarVisibility="Never" VerticalScrollBarVisibility="Always">
+            <CollectionView ItemsSource="{Binding UnclaimedPrizes}">
+                <CollectionView.ItemsLayout>
+                    <LinearItemsLayout Orientation="Vertical" ItemSpacing="1" />
+                </CollectionView.ItemsLayout>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Grid ColumnDefinitions="*,*,*,*,*,*,*"
+                              RowDefinitions="Auto"
+                              BackgroundColor="LightGray"
+                              Padding="5">
+                            <Label Grid.Column="0" Text="{Binding PricePoint}" FontSize="Small" />
+                            <Label Grid.Column="1" Text="{Binding GameNumber}" FontSize="Small" />
+                            <Label Grid.Column="2" Text="{Binding GameName}" FontSize="Small" />
+                            <Label Grid.Column="3" Text="{Binding PercentUnsold}" FontSize="Small" />
+                            <Label Grid.Column="4" Text="{Binding TotalUnclaimed}" FontSize="Small" />
+                            <Label Grid.Column="5" Text="{Binding TopPrizeLevel}" FontSize="Small" />
+                            <Label Grid.Column="6" Text="{Binding TopPrizeUnclaimed}" FontSize="Small" />
+                        </Grid>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </ScrollView>
     </StackLayout>
 </ContentPage>

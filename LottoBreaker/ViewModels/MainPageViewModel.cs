@@ -4,12 +4,14 @@ using System.Collections.ObjectModel;
 using System.Net.Http;
 using System.Linq;
 using System.Windows.Input;
+using LottoBreaker.Models;
+using System.ComponentModel;
 
 namespace LottoBreaker.ViewModels
 {
-    public class MainPageViewModel
+    public class MainPageViewModel : INotifyPropertyChanged
     {
-        public ObservableCollection<string> UnclaimedPrizes { get; set; } = new ObservableCollection<string>();
+        public ObservableCollection<UnclaimedPrize> UnclaimedPrizes { get; set; } = new ObservableCollection<UnclaimedPrize>();
 
         public ICommand LoadDataCommand { get; }
 
@@ -41,24 +43,29 @@ namespace LottoBreaker.ViewModels
                     var doc = new HtmlDocument();
                     doc.LoadHtml(body);
 
-                    var prizeNodes = doc.DocumentNode.SelectNodes("//table[@class='tbstriped']/tr");
+                    // Define prizeNodes here
+                    var prizeNodes = doc.DocumentNode.SelectNodes("//table[@class='tbstriped']/tr"); // Adjust this XPath if necessary
                     if (prizeNodes != null)
                     {
-                        foreach (var node in prizeNodes)
+                        UnclaimedPrizes.Clear();
+                        foreach (var node in prizeNodes.Skip(1)) // Skip the header row
                         {
-                            var cells = node.SelectNodes("td"); // This can return null if there are no td elements
-                            if (cells != null)
+                            var cells = node.SelectNodes("td");
+                            if (cells != null && cells.Count >= 7) // Ensure we have at least 7 cells to match all fields
                             {
-                                // Joining cells with a separator, but check if cells has elements
-                                var prizeInfo = cells.Any() ? string.Join(" - ", cells.Select(c => c.InnerText.Trim())) : string.Empty;
-                                if (!string.IsNullOrEmpty(prizeInfo))
+                                UnclaimedPrizes.Add(new UnclaimedPrize
                                 {
-                                    UnclaimedPrizes.Add(prizeInfo);
-                                    System.Diagnostics.Debug.WriteLine("Added prize: " + prizeInfo);
-                                }
+                                    PricePoint = cells[0].InnerText.Trim(),
+                                    GameNumber = cells[1].InnerText.Trim(),
+                                    GameName = cells[2].InnerText.Trim(),
+                                    PercentUnsold = cells[3].InnerText.Trim(),
+                                    TotalUnclaimed = cells[4].InnerText.Trim(),
+                                    TopPrizeLevel = cells[5].InnerText.Trim(),
+                                    TopPrizeUnclaimed = cells[6].InnerText.Trim()
+                                });
                             }
                         }
-                        System.Diagnostics.Debug.WriteLine("Number of unclaimed prizes added: " + UnclaimedPrizes.Count);
+                        OnPropertyChanged(nameof(UnclaimedPrizes));
                     }
                     else
                     {
@@ -76,5 +83,9 @@ namespace LottoBreaker.ViewModels
             }
             System.Diagnostics.Debug.WriteLine("LoadDataAsync method completed.");
         }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+        protected virtual void OnPropertyChanged(string propertyName) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
+
 }
