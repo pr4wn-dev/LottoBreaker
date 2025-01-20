@@ -2,14 +2,14 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewModels="clr-namespace:LottoBreaker.ViewModels"
-             xmlns:converters="clr-namespace:LottoBreaker.Converters"
+             xmlns:local="clr-namespace:LottoBreaker" 
              x:Class="LottoBreaker.MainPage">
     <ContentPage.BindingContext>
         <viewModels:MainPageViewModel/>
     </ContentPage.BindingContext>
     <ContentPage.Resources>
         <ResourceDictionary>
-            <converters:PrizeLevelCountConverter x:Key="PrizeLevelCountConverter" />
+            <local:WinningChanceConverter x:Key="WinningChanceConverter" />
         </ResourceDictionary>
     </ContentPage.Resources>
     <Grid RowDefinitions="Auto, *" ColumnDefinitions="*">
@@ -24,20 +24,24 @@
             </CollectionView.ItemsLayout>
             <CollectionView.ItemTemplate>
                 <DataTemplate>
-                    <Grid ColumnDefinitions="*,*,*,*,*,*,Auto,*"
-                  RowDefinitions="Auto"
-                  BackgroundColor="DarkBlue"
-                  Padding="5">
+                    <Grid ColumnDefinitions="*,*,*,*,*,*"
+                          RowDefinitions="Auto"
+                          BackgroundColor="LightGray"
+                          Padding="5">
                         <Label Grid.Column="0" Text="{Binding PricePoint}" FontSize="Small" />
                         <Label Grid.Column="1" Text="{Binding GameNumber}" FontSize="Small" />
                         <Label Grid.Column="2" Text="{Binding GameName}" FontSize="Small" />
                         <Label Grid.Column="3" Text="{Binding PercentUnsold}" FontSize="Small" />
                         <Label Grid.Column="4" Text="{Binding TotalUnclaimed}" FontSize="Small" />
-
-                        <!-- Replace TopPrizeLevel and TopPrizeUnclaimed with a summary -->
-                        <Label Grid.Column="5" Text="{Binding TopPrizeLevel}" FontSize="Small" />
-                        <Label Grid.Column="6" Text="{Binding TopPrizes.Count, Converter={StaticResource PrizeLevelCountConverter}}" FontSize="Small" />
-                        <Label Grid.Column="7" Text="{Binding WinningChance}" FontSize="14" FontAttributes="None" />
+                        <Label Grid.Column="5" 
+                               Text="{Binding WinningChance, Converter={StaticResource WinningChanceConverter}}" 
+                               FontSize="Small">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label" Binding="{Binding WinningChance}" Value="N/A">
+                                    <Setter Property="TextColor" Value="Red" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
                     </Grid>
                 </DataTemplate>
             </CollectionView.ItemTemplate>
