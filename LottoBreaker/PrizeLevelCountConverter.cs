@@ -10,14 +10,14 @@ namespace LottoBreaker.Converters
         {
             if (value is int count)
             {
-                return count > 1 ? $"{count} Levels" : "1 Level"; // Simplified logic
+                return count > 1 ? $"{count} Levels" : "1 Level";
             }
-            return "Multiple Levels"; // Default case if value isn't an int or is null
+            return "1 Level"; // Default to one level if the count is null or not an int
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            throw new NotImplementedException(); // We don't need to convert back for this use case
+            throw new NotImplementedException();
         }
     }
 }

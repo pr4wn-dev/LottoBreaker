@@ -35,14 +35,9 @@
                         <Label Grid.Column="4" Text="{Binding TotalUnclaimed}" FontSize="Small" />
 
                         <!-- Replace TopPrizeLevel and TopPrizeUnclaimed with a summary -->
-                        <Label Grid.Column="5" 
-                            Text="{Binding TopPrizes[0].PrizeLevel, FallbackValue='Multiple Levels'}" 
-                            FontSize="Small" />
-                        <Label Grid.Column="6" 
-                            Text="{Binding TopPrizes.Count, Converter={StaticResource PrizeLevelCountConverter}}" 
-                            FontSize="Small" />
-
-                        <Label Grid.Column="7" Text="{Binding WinningChance}" FontSize="12" />
+                        <Label Grid.Column="5" Text="{Binding TopPrizeLevel}" FontSize="Small" />
+                        <Label Grid.Column="6" Text="{Binding TopPrizes.Count, Converter={StaticResource PrizeLevelCountConverter}}" FontSize="Small" />
+                        <Label Grid.Column="7" Text="{Binding WinningChance}" FontSize="14" FontAttributes="None" />
                     </Grid>
                 </DataTemplate>
             </CollectionView.ItemTemplate>
