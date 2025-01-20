@@ -9,7 +9,13 @@ namespace LottoBreaker.Models // Adjust the namespace as per your project struct
         public string GameName { get; set; }
         public string PercentUnsold { get; set; }
         public string TotalUnclaimed { get; set; }
-        public string TopPrizeLevel { get; set; }
-        public string TopPrizeUnclaimed { get; set; }
+        public List<TopPrizeInfo> TopPrizes { get; set; } = new List<TopPrizeInfo>();
+        public string WinningChance { get; set; }
+    }
+
+    public class TopPrizeInfo
+    {
+        public string PrizeLevel { get; set; }
+        public int Unclaimed { get; set; }
     }
 }

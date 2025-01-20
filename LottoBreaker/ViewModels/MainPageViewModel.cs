@@ -48,25 +48,65 @@ namespace LottoBreaker.ViewModels
                     if (prizeNodes != null)
                     {
                         UnclaimedPrizes.Clear();
+                        UnclaimedPrize currentGame = null;
                         foreach (var node in prizeNodes.Skip(1)) // Skip the header row
                         {
                             var cells = node.SelectNodes("td");
-                            if (cells != null && cells.Count >= 7) // Ensure we have at least 7 cells to match all fields
+                            if (cells != null && cells.Count >= 7) // Ensure we have at least 7 cells
                             {
-                                UnclaimedPrizes.Add(new UnclaimedPrize
+                                var pricePoint = cells[0].InnerText.Trim();
+                                if (!string.IsNullOrEmpty(pricePoint) && pricePoint != " ")
                                 {
-                                    PricePoint = cells[0].InnerText.Trim(),
-                                    GameNumber = cells[1].InnerText.Trim(),
-                                    GameName = cells[2].InnerText.Trim(),
-                                    PercentUnsold = cells[3].InnerText.Trim(),
-                                    TotalUnclaimed = cells[4].InnerText.Trim(),
-                                    TopPrizeLevel = cells[5].InnerText.Trim(),
-                                    TopPrizeUnclaimed = cells[6].InnerText.Trim()
-                                });
+                                    // New game entry
+                                    currentGame = new UnclaimedPrize
+                                    {
+                                        PricePoint = pricePoint,
+                                        GameNumber = cells[1].InnerText.Trim(),
+                                        GameName = cells[2].InnerText.Trim(),
+                                        PercentUnsold = cells[3].InnerText.Trim(),
+                                        TotalUnclaimed = cells[4].InnerText.Trim(),
+                                    };
+                                    UnclaimedPrizes.Add(currentGame);
+                                }
+
+                                // Add top prize info
+                                if (currentGame != null && int.TryParse(cells[6].InnerText.Trim(), out int unclaimed))
+                                {
+                                    currentGame.TopPrizes.Add(new TopPrizeInfo { PrizeLevel = cells[5].InnerText.Trim(), Unclaimed = unclaimed });
+                                }
                             }
                         }
-                        OnPropertyChanged(nameof(UnclaimedPrizes));
+
+                        // Calculate winning chance for each game
+                        foreach (var prize in UnclaimedPrizes)
+                        {
+                            if (double.TryParse(prize.PercentUnsold.Trim('%'), out double unsoldPercent) && prize.TopPrizes.Any())
+                            {
+                                int totalTickets = EstimateTotalTickets(prize.PricePoint);
+                                double unsoldTickets = totalTickets * (unsoldPercent / 100.0);
+
+                                // Sum up all unclaimed prizes for a total chance calculation
+                                int totalUnclaimedPrizes = prize.TopPrizes.Sum(p => p.Unclaimed);
+                                if (totalUnclaimedPrizes > 0)
+                                {
+                                    double chance = unsoldTickets / totalUnclaimedPrizes;
+                                    prize.WinningChance = string.Format("{0:N2} to 1", chance);
+                                }
+                                else
+                                {
+                                    prize.WinningChance = "No Prizes Left";
+                                }
+                            }
+                            else
+                            {
+                                prize.WinningChance = "N/A";
+                                System.Diagnostics.Debug.WriteLine($"No chance calculated for {prize.GameName}: PercentUnsold: {prize.PercentUnsold}, TopPrizes Count: {prize.TopPrizes.Count}");
+                            }
+                        }
+
+                    OnPropertyChanged(nameof(UnclaimedPrizes));
                     }
+
                     else
                     {
                         System.Diagnostics.Debug.WriteLine("No prize data found or table structure not as expected.");
@@ -84,8 +124,25 @@ namespace LottoBreaker.ViewModels
             System.Diagnostics.Debug.WriteLine("LoadDataAsync method completed.");
         }
 
+
+        private int EstimateTotalTickets(string pricePoint)
+        {
+            // This is an estimation based on Maine's typical ticket production numbers
+            switch (pricePoint)
+            {
+                case "$1.00": return 1_500_000; // Lower priced games might have more tickets
+                case "$2.00": return 1_000_000;
+                case "$3.00": return 800_000;
+                case "$5.00": return 700_000;
+                case "$10.00": return 600_000;
+                case "$20.00": return 500_000;
+                default: return 1_000_000; // Default case for unknown price points
+            }
+        }
+
         public event PropertyChangedEventHandler PropertyChanged;
         protected virtual void OnPropertyChanged(string propertyName) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+
     }
 
 }
