@@ -4,38 +4,35 @@
              xmlns:viewModels="clr-namespace:LottoBreaker.ViewModels"
              x:Class="LottoBreaker.MainPage">
     <ContentPage.BindingContext>
-        <viewModels:MainPageViewModel />
+        <viewModels:MainPageViewModel/>
     </ContentPage.BindingContext>
-    <StackLayout>
-        <!-- Button to trigger data loading -->
-        <Button Text="Load Data" 
+    <Grid RowDefinitions="Auto, *" ColumnDefinitions="*">
+        <!-- Button for loading data -->
+        <Button Grid.Row="0" Text="Load Data" 
                 Command="{Binding LoadDataCommand}"
-                HorizontalOptions="Center"
                 Margin="10"/>
 
-        <!-- ScrollView for the table -->
-        <ScrollView Orientation="Vertical" HorizontalScrollBarVisibility="Never" VerticalScrollBarVisibility="Always">
-            <CollectionView ItemsSource="{Binding UnclaimedPrizes}">
-                <CollectionView.ItemsLayout>
-                    <LinearItemsLayout Orientation="Vertical" ItemSpacing="1" />
-                </CollectionView.ItemsLayout>
-                <CollectionView.ItemTemplate>
-                    <DataTemplate>
-                        <Grid ColumnDefinitions="*,*,*,*,*,*,*"
-                              RowDefinitions="Auto"
-                              BackgroundColor="LightGray"
-                              Padding="5">
-                            <Label Grid.Column="0" Text="{Binding PricePoint}" FontSize="Small" />
-                            <Label Grid.Column="1" Text="{Binding GameNumber}" FontSize="Small" />
-                            <Label Grid.Column="2" Text="{Binding GameName}" FontSize="Small" />
-                            <Label Grid.Column="3" Text="{Binding PercentUnsold}" FontSize="Small" />
-                            <Label Grid.Column="4" Text="{Binding TotalUnclaimed}" FontSize="Small" />
-                            <Label Grid.Column="5" Text="{Binding TopPrizeLevel}" FontSize="Small" />
-                            <Label Grid.Column="6" Text="{Binding TopPrizeUnclaimed}" FontSize="Small" />
-                        </Grid>
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
-            </CollectionView>
-        </ScrollView>
-    </StackLayout>
+        <!-- CollectionView for data display -->
+        <CollectionView Grid.Row="1" ItemsSource="{Binding UnclaimedPrizes}">
+            <CollectionView.ItemsLayout>
+                <LinearItemsLayout Orientation="Vertical" ItemSpacing="1" />
+            </CollectionView.ItemsLayout>
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Grid ColumnDefinitions="*,*,*,*,*,*,*"
+                          RowDefinitions="Auto"
+                          BackgroundColor="DarkSlateBlue"
+                          Padding="5">
+                        <Label Grid.Column="0" Text="{Binding PricePoint}" FontSize="Small" />
+                        <Label Grid.Column="1" Text="{Binding GameNumber}" FontSize="Small" />
+                        <Label Grid.Column="2" Text="{Binding GameName}" FontSize="Small" />
+                        <Label Grid.Column="3" Text="{Binding PercentUnsold}" FontSize="Small" />
+                        <Label Grid.Column="4" Text="{Binding TotalUnclaimed}" FontSize="Small" />
+                        <Label Grid.Column="5" Text="{Binding TopPrizeLevel}" FontSize="Small" />
+                        <Label Grid.Column="6" Text="{Binding TopPrizeUnclaimed}" FontSize="Small" />
+                    </Grid>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </Grid>
 </ContentPage>
