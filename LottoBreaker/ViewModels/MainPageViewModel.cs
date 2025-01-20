@@ -49,15 +49,18 @@ namespace LottoBreaker.ViewModels
                     {
                         UnclaimedPrizes.Clear();
                         UnclaimedPrize currentGame = null;
-                        foreach (var node in prizeNodes.Skip(1)) // Skip the header row
+                        foreach (var node in prizeNodes.Skip(1))
                         {
+
                             var cells = node.SelectNodes("td");
-                            if (cells != null && cells.Count >= 7) // Ensure we have at least 7 cells
+                            System.Diagnostics.Debug.WriteLine($"Parsing Game: {cells[2].InnerText.Trim()}, Prize Levels: {currentGame?.TopPrizes?.Count ?? 0}");
+
+                            if (cells != null && cells.Count >= 7)
                             {
                                 var pricePoint = cells[0].InnerText.Trim();
+                                // Ensure a new game object is created for each new game
                                 if (!string.IsNullOrEmpty(pricePoint) && pricePoint != " ")
                                 {
-                                    // New game entry
                                     currentGame = new UnclaimedPrize
                                     {
                                         PricePoint = pricePoint,
@@ -65,6 +68,7 @@ namespace LottoBreaker.ViewModels
                                         GameName = cells[2].InnerText.Trim(),
                                         PercentUnsold = cells[3].InnerText.Trim(),
                                         TotalUnclaimed = cells[4].InnerText.Trim(),
+                                        TopPrizes = new List<TopPrizeInfo>() // Always initialize this
                                     };
                                     UnclaimedPrizes.Add(currentGame);
                                 }
@@ -80,6 +84,8 @@ namespace LottoBreaker.ViewModels
                         // Calculate winning chance for each game
                         foreach (var prize in UnclaimedPrizes)
                         {
+                            System.Diagnostics.Debug.WriteLine($"Game: {prize.GameName}, Prize Levels: {prize.TopPrizes.Count}");
+
                             if (double.TryParse(prize.PercentUnsold.Trim('%'), out double unsoldPercent) && prize.TopPrizes.Any())
                             {
                                 int totalTickets = EstimateTotalTickets(prize.PricePoint);
@@ -96,6 +102,10 @@ namespace LottoBreaker.ViewModels
                                 {
                                     prize.WinningChance = "No Prizes Left";
                                 }
+                            }
+                            if (prize.TopPrizes == null || prize.TopPrizes.Count == 0)
+                            {
+                                prize.WinningChance = "No Prizes Left";
                             }
                             else
                             {

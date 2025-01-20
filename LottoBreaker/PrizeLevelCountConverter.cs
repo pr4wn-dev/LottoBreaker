@@ -8,11 +8,11 @@ namespace LottoBreaker.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value is int count && count > 1)
+            if (value is int count)
             {
-                return $"{count} Levels";
+                return count > 1 ? $"{count} Levels" : "1 Level"; // Simplified logic
             }
-            return "1 Level";
+            return "Multiple Levels"; // Default case if value isn't an int or is null
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

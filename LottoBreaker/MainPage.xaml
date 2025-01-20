@@ -24,7 +24,7 @@
             </CollectionView.ItemsLayout>
             <CollectionView.ItemTemplate>
                 <DataTemplate>
-                    <Grid ColumnDefinitions="*,*,*,*,*,*,*"
+                    <Grid ColumnDefinitions="*,*,*,*,*,*,Auto,*"
                   RowDefinitions="Auto"
                   BackgroundColor="DarkBlue"
                   Padding="5">
@@ -42,7 +42,7 @@
                             Text="{Binding TopPrizes.Count, Converter={StaticResource PrizeLevelCountConverter}}" 
                             FontSize="Small" />
 
-                        <Label Grid.Column="7" Text="{Binding WinningChance}" FontSize="Small" />
+                        <Label Grid.Column="7" Text="{Binding WinningChance}" FontSize="12" />
                     </Grid>
                 </DataTemplate>
             </CollectionView.ItemTemplate>
