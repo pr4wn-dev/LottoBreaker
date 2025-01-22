@@ -72,13 +72,12 @@ namespace LottoBreaker.ViewModels
                         // Calculate winning chance for each game
                         foreach (var prize in UnclaimedPrizes)
                         {
-                            // Ensure we're always calculating a chance, even if data might be missing
                             if (double.TryParse(prize.PercentUnsold.Trim('%'), out double unsoldPercent))
                             {
                                 int totalTickets = EstimateTotalTickets(prize.PricePoint);
                                 double unsoldTickets = totalTickets * (unsoldPercent / 100.0);
 
-                                // Use TryParse to handle potential parsing errors
+                                // Using TotalUnclaimed directly as the total number of unclaimed prizes
                                 if (int.TryParse(prize.TotalUnclaimed, out int totalUnclaimedPrizes) && totalUnclaimedPrizes > 0)
                                 {
                                     double chance = unsoldTickets / totalUnclaimedPrizes;
@@ -86,14 +85,11 @@ namespace LottoBreaker.ViewModels
                                 }
                                 else
                                 {
-                                    // If TotalUnclaimed can't be parsed or is zero, we'll use a very high number to avoid division by zero
-                                    // This effectively gives a very low chance of winning
-                                    prize.WinningChance = string.Format("{0:N2} to 1", double.MaxValue);
+                                    prize.WinningChance = "No Prizes Left";
                                 }
                             }
                             else
                             {
-                                // If PercentUnsold can't be parsed, we'll set a default value
                                 prize.WinningChance = "N/A";
                                 System.Diagnostics.Debug.WriteLine($"No chance calculated for {prize.GameName}: PercentUnsold: {prize.PercentUnsold}, TotalUnclaimed: {prize.TotalUnclaimed}");
                             }

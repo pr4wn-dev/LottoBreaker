@@ -14,9 +14,9 @@ namespace LottoBreaker
                 {
                     return chanceString; // Keep N/A as is
                 }
-                else if (double.TryParse(chanceString.Split(' ')[0], out double chance) && double.IsPositiveInfinity(chance))
+                else if (double.TryParse(chanceString.Split(' ')[0], out double chance) && chance > 1e6) // Assuming 1 million is 'extremely low'
                 {
-                    return "Extremely Low"; // If the chance is effectively zero (very high number)
+                    return "Extremely Low"; // If the chance is very high (low probability)
                 }
                 return chanceString; // Return the original string if it's neither N/A nor extremely low
             }
