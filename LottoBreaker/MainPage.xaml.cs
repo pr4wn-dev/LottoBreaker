@@ -1,5 +1,6 @@
 ﻿using LottoBreaker.ViewModels;
 using Microsoft.Maui.Controls;
+using System.Collections;
 using System.Collections.ObjectModel;
 
 namespace LottoBreaker
@@ -23,18 +24,29 @@ namespace LottoBreaker
                 isLoading = true;
                 await viewModel.LoadDataAsync();
                 await Task.Delay(100); // Small delay to ensure data is fully processed
-                RefreshUI();
+                await RefreshUIAsync();
                 isLoading = false;
             }
         }
 
-        private void RefreshUI()
+
+        private async Task RefreshUIAsync()
         {
             if (BindingContext is MainPageViewModel viewModel)
             {
-                // Create a new collection to force a refresh
-                var newCollection = new ObservableCollection<TicketGame>(viewModel.TicketGame);
-                collectionView.ItemsSource = newCollection;
+                await MainThread.InvokeOnMainThreadAsync(() =>
+                {
+                    System.Diagnostics.Debug.WriteLine("Before Refresh: collectionView.ItemsSource count: " + (collectionView.ItemsSource as ICollection)?.Count);
+
+                    // Create a new collection to force a refresh
+                    var newCollection = new ObservableCollection<TicketGame>(viewModel.TicketGame);
+
+                    // Clear and set new collection
+                    collectionView.ItemsSource = null;
+                    collectionView.ItemsSource = newCollection;
+
+                    System.Diagnostics.Debug.WriteLine("After Refresh: collectionView.ItemsSource count: " + (collectionView.ItemsSource as ICollection)?.Count);
+                });
             }
         }
     }

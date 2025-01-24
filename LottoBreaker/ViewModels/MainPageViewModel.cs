@@ -37,11 +37,16 @@ namespace LottoBreaker.ViewModels
         public MainPageViewModel()
         {
             LoadDataCommand = new Command(async () => await LoadDataAsync());
+            System.Diagnostics.Debug.WriteLine("Initial TicketGame count: " + TicketGame.Count);
         }
 
         public async Task LoadDataAsync()
         {
             System.Diagnostics.Debug.WriteLine("LoadDataAsync method started.");
+            System.Diagnostics.Debug.WriteLine("Before Clear: TicketGame count: " + TicketGame.Count);
+            TicketGame.Clear();
+            System.Diagnostics.Debug.WriteLine("After Clear: TicketGame count: " + TicketGame.Count);
+
 
             var client = new HttpClient();
             var request = new HttpRequestMessage
@@ -66,7 +71,7 @@ namespace LottoBreaker.ViewModels
                     if (tables != null && tables.Count > 0)
                     {
                         // Clear the collection before repopulating
-                        TicketGame.Clear();
+                        //TicketGame.Clear();
 
                         foreach (var table in tables)
                         {
@@ -107,11 +112,11 @@ namespace LottoBreaker.ViewModels
                                         {
                                             int currentTotal = int.Parse(currentGame.TotalUnclaimedTopPrizes);
                                             currentGame.TotalUnclaimedTopPrizes = (currentTotal + unclaimedPrizes).ToString();
-                                            System.Diagnostics.Debug.WriteLine($"Game: {currentGame.GameName}, Adding {unclaimedPrizes} to current total {currentTotal}, new total: {currentGame.TotalUnclaimedTopPrizes}");
+                                            System.Diagnostics.Debug.WriteLine($"Parsed {unclaimedPrizesStr} to {unclaimedPrizes} for {currentGame.GameName}, Total: {currentGame.TotalUnclaimedTopPrizes}");
                                         }
                                         else
                                         {
-                                            System.Diagnostics.Debug.WriteLine($"Failed to parse unclaimed prize for game {gameName}: {unclaimedPrizesStr}");
+                                            System.Diagnostics.Debug.WriteLine($"Failed to parse {unclaimedPrizesStr} for {currentGame.GameName}");
                                         }
                                     }
                                 }
@@ -127,6 +132,11 @@ namespace LottoBreaker.ViewModels
                                 {
                                     game.TotalUnclaimedTopPrizes = "0"; // Default to 0 if parsing fails
                                 }
+                            }
+                            System.Diagnostics.Debug.WriteLine("After Loading: TicketGame count: " + TicketGame.Count);
+                            foreach (var game in TicketGame)
+                            {
+                                System.Diagnostics.Debug.WriteLine($"Game: {game.GameName}, TotalUnclaimedTopPrizes: {game.TotalUnclaimedTopPrizes}");
                             }
                         });
 
@@ -154,7 +164,6 @@ namespace LottoBreaker.ViewModels
         }
     }
 
-
     public class TicketGame
     {
         public string PricePoint { get; set; }
@@ -164,7 +173,6 @@ namespace LottoBreaker.ViewModels
         public string TotalUnclaimedTopPrizes { get; set; }
         public string WinningChance { get; set; }
     }
-
     public class TopPrizeInfo
     {
         public string PrizeLevel { get; set; }
