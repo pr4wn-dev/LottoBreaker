@@ -18,7 +18,7 @@
                 Command="{Binding LoadDataCommand}"
                 Margin="10"/>
 
-        <CollectionView Grid.Row="1" ItemsSource="{Binding UnclaimedPrizes}">
+        <CollectionView x:Name="collectionView" Grid.Row="1" ItemsSource="{Binding TicketGame}">
             <CollectionView.ItemsLayout>
                 <LinearItemsLayout Orientation="Vertical" ItemSpacing="1" />
             </CollectionView.ItemsLayout>
@@ -32,7 +32,7 @@
                         <Label Grid.Column="1" Text="{Binding GameNumber}" FontSize="Small" />
                         <Label Grid.Column="2" Text="{Binding GameName}" FontSize="Small" />
                         <Label Grid.Column="3" Text="{Binding PercentUnsold}" FontSize="Small" />
-                        <Label Grid.Column="4" Text="{Binding TotalUnclaimed}" FontSize="Small" />
+                        <Label Grid.Column="4" Text="{Binding TotalUnclaimedTopPrizes}" FontSize="Small" />
                         <Label Grid.Column="5" 
                                Text="{Binding WinningChance, Converter={StaticResource WinningChanceConverter}}" 
                                FontSize="Small">

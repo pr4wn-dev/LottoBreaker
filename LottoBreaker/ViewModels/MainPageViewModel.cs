@@ -1,18 +1,36 @@
 ﻿using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Net.Http;
 using System.Threading.Tasks;
-using System.Windows.Input;
 using HtmlAgilityPack;
-using Microsoft.Maui.Controls;
+using System.Windows.Input;
 
 namespace LottoBreaker.ViewModels
 {
     public class MainPageViewModel : INotifyPropertyChanged
     {
-        public ObservableCollection<UnclaimedPrize> UnclaimedPrizes { get; set; } = new ObservableCollection<UnclaimedPrize>();
+        private ObservableCollection<TicketGame> _ticketGame = new ObservableCollection<TicketGame>();
+        public ObservableCollection<TicketGame> TicketGame
+        {
+            get => _ticketGame;
+            set
+            {
+                if (_ticketGame != value)
+                {
+                    _ticketGame = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
 
         public ICommand LoadDataCommand { get; }
 
@@ -44,59 +62,80 @@ namespace LottoBreaker.ViewModels
                     var doc = new HtmlDocument();
                     doc.LoadHtml(body);
 
-                    var prizeNodes = doc.DocumentNode.SelectNodes("//table[@class='tbstriped']/tr");
-                    if (prizeNodes != null)
+                    var tables = doc.DocumentNode.SelectNodes("//table[@class='tbstriped']");
+                    if (tables != null && tables.Count > 0)
                     {
-                        UnclaimedPrizes.Clear();
-                        foreach (var node in prizeNodes.Skip(1)) // Skip the header row
+                        // Clear the collection before repopulating
+                        TicketGame.Clear();
+
+                        foreach (var table in tables)
                         {
-                            var cells = node.SelectNodes("td");
-                            if (cells != null && cells.Count >= 7)
+                            var prizeNodes = table.SelectNodes("tr");
+                            if (prizeNodes != null)
                             {
-                                var pricePoint = cells[0].InnerText.Trim();
-                                if (!string.IsNullOrEmpty(pricePoint) && pricePoint != " ") // New game
+                                TicketGame currentGame = null;
+
+                                foreach (var node in prizeNodes.Skip(1)) // Skip the header row
                                 {
-                                    var newGame = new UnclaimedPrize
+                                    var cells = node.SelectNodes("td");
+                                    if (cells != null && cells.Count >= 7)
                                     {
-                                        PricePoint = pricePoint,
-                                        GameNumber = cells[1].InnerText.Trim(),
-                                        GameName = cells[2].InnerText.Trim(),
-                                        PercentUnsold = cells[3].InnerText.Trim(),
-                                        TotalUnclaimed = cells[4].InnerText.Trim(),
-                                    };
-                                    UnclaimedPrizes.Add(newGame);
+                                        var pricePoint = cells[0].InnerText.Trim();
+                                        var gameName = cells[2].InnerText.Trim();
+                                        var percentUnsold = cells[3].InnerText.Trim();
+                                        var unclaimedPrizesStr = cells[6].InnerText.Trim();
+
+                                        if (!string.IsNullOrEmpty(pricePoint) && pricePoint != " ")
+                                        {
+                                            // Start of a new game or continue if game name is the same
+                                            if (currentGame == null || currentGame.GameName != gameName)
+                                            {
+                                                currentGame = new TicketGame
+                                                {
+                                                    PricePoint = pricePoint,
+                                                    GameNumber = cells[1].InnerText.Trim(),
+                                                    GameName = gameName,
+                                                    PercentUnsold = percentUnsold,
+                                                    TotalUnclaimedTopPrizes = "0"  // Initialize to zero for a new game
+                                                };
+                                                TicketGame.Add(currentGame);
+                                            }
+                                        }
+
+                                        // Parse unclaimed prizes for this level of the game
+                                        if (int.TryParse(unclaimedPrizesStr, out int unclaimedPrizes))
+                                        {
+                                            int currentTotal = int.Parse(currentGame.TotalUnclaimedTopPrizes);
+                                            currentGame.TotalUnclaimedTopPrizes = (currentTotal + unclaimedPrizes).ToString();
+                                            System.Diagnostics.Debug.WriteLine($"Game: {currentGame.GameName}, Adding {unclaimedPrizes} to current total {currentTotal}, new total: {currentGame.TotalUnclaimedTopPrizes}");
+                                        }
+                                        else
+                                        {
+                                            System.Diagnostics.Debug.WriteLine($"Failed to parse unclaimed prize for game {gameName}: {unclaimedPrizesStr}");
+                                        }
+                                    }
                                 }
                             }
                         }
 
-                        // Calculate winning chance for each game
-                        foreach (var prize in UnclaimedPrizes)
+                        // Ensure all data operations are complete before notifying UI
+                        await Task.Run(() =>
                         {
-                            if (double.TryParse(prize.PercentUnsold.Trim('%'), out double unsoldPercent))
+                            foreach (var game in TicketGame)
                             {
-                                int totalTickets = EstimateTotalTickets(prize.PricePoint);
-                                double unsoldTickets = totalTickets * (unsoldPercent / 100.0);
+                                if (string.IsNullOrEmpty(game.TotalUnclaimedTopPrizes))
+                                {
+                                    game.TotalUnclaimedTopPrizes = "0"; // Default to 0 if parsing fails
+                                }
+                            }
+                        });
 
-                                // Using TotalUnclaimed directly as the total number of unclaimed prizes
-                                if (int.TryParse(prize.TotalUnclaimed, out int totalUnclaimedPrizes) && totalUnclaimedPrizes > 0)
-                                {
-                                    double chance = unsoldTickets / totalUnclaimedPrizes;
-                                    prize.WinningChance = string.Format("{0:N2} to 1", chance);
-                                }
-                                else
-                                {
-                                    prize.WinningChance = "No Prizes Left";
-                                }
-                            }
-                            else
-                            {
-                                prize.WinningChance = "N/A";
-                                System.Diagnostics.Debug.WriteLine($"No chance calculated for {prize.GameName}: PercentUnsold: {prize.PercentUnsold}, TotalUnclaimed: {prize.TotalUnclaimed}");
-                            }
-                        }
-                        OnPropertyChanged(nameof(UnclaimedPrizes));
+                        // Notify UI of changes on the main thread
+                        Device.BeginInvokeOnMainThread(() =>
+                        {
+                            OnPropertyChanged(nameof(TicketGame));
+                        });
                     }
-
                     else
                     {
                         System.Diagnostics.Debug.WriteLine("No prize data found or table structure not as expected.");
@@ -113,32 +152,16 @@ namespace LottoBreaker.ViewModels
             }
             System.Diagnostics.Debug.WriteLine("LoadDataAsync method completed.");
         }
-
-        private int EstimateTotalTickets(string pricePoint)
-        {
-            switch (pricePoint)
-            {
-                case "$1.00": return 1_500_000;
-                case "$2.00": return 1_000_000;
-                case "$3.00": return 800_000;
-                case "$5.00": return 700_000;
-                case "$10.00": return 600_000;
-                case "$20.00": return 500_000;
-                default: return 1_000_000;
-            }
-        }
-
-        public event PropertyChangedEventHandler PropertyChanged;
-        protected virtual void OnPropertyChanged(string propertyName) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 
-    public class UnclaimedPrize
+
+    public class TicketGame
     {
         public string PricePoint { get; set; }
         public string GameNumber { get; set; }
         public string GameName { get; set; }
         public string PercentUnsold { get; set; }
-        public string TotalUnclaimed { get; set; }
+        public string TotalUnclaimedTopPrizes { get; set; }
         public string WinningChance { get; set; }
     }
 

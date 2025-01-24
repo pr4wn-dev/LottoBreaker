@@ -2,6 +2,7 @@
 using System.Globalization;
 using Microsoft.Maui.Controls;
 
+
 namespace LottoBreaker
 {
     public class WinningChanceConverter : IValueConverter
