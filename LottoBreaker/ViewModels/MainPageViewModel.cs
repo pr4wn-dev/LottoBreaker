@@ -47,7 +47,6 @@ namespace LottoBreaker.ViewModels
             TicketGame.Clear();
             System.Diagnostics.Debug.WriteLine("After Clear: TicketGame count: " + TicketGame.Count);
 
-
             var client = new HttpClient();
             var request = new HttpRequestMessage
             {
@@ -70,8 +69,7 @@ namespace LottoBreaker.ViewModels
                     var tables = doc.DocumentNode.SelectNodes("//table[@class='tbstriped']");
                     if (tables != null && tables.Count > 0)
                     {
-                        // Clear the collection before repopulating
-                        //TicketGame.Clear();
+                        var allGames = new ObservableCollection<TicketGame>();
 
                         foreach (var table in tables)
                         {
@@ -101,38 +99,77 @@ namespace LottoBreaker.ViewModels
                                                     GameNumber = cells[1].InnerText.Trim(),
                                                     GameName = gameName,
                                                     PercentUnsold = percentUnsold,
-                                                    TotalUnclaimedTopPrizes = "0"  // Initialize to zero for a new game
+                                                    TotalUnclaimedTopPrizes = "",
+                                                    UnclaimedPrizes = new ObservableCollection<string>()
                                                 };
-                                                TicketGame.Add(currentGame);
+                                                allGames.Add(currentGame);
                                             }
                                         }
 
-                                        // Parse unclaimed prizes for this level of the game
-                                        if (int.TryParse(unclaimedPrizesStr, out int unclaimedPrizes))
-                                        {
-                                            int currentTotal = int.Parse(currentGame.TotalUnclaimedTopPrizes);
-                                            currentGame.TotalUnclaimedTopPrizes = (currentTotal + unclaimedPrizes).ToString();
-                                            System.Diagnostics.Debug.WriteLine($"Parsed {unclaimedPrizesStr} to {unclaimedPrizes} for {currentGame.GameName}, Total: {currentGame.TotalUnclaimedTopPrizes}");
-                                        }
-                                        else
-                                        {
-                                            System.Diagnostics.Debug.WriteLine($"Failed to parse {unclaimedPrizesStr} for {currentGame.GameName}");
-                                        }
+                                        // Collect unclaimed prizes as strings
+                                        currentGame.UnclaimedPrizes.Add(unclaimedPrizesStr);
                                     }
                                 }
                             }
                         }
 
+                        // Convert all unclaimed prizes after collecting all data
+                        foreach (var game in allGames)
+                        {
+                            int totalUnclaimed = 0;
+                            foreach (var unclaimedPrize in game.UnclaimedPrizes)
+                            {
+                                if (int.TryParse(unclaimedPrize, out int unclaimed))
+                                {
+                                    totalUnclaimed += unclaimed;
+                                    System.Diagnostics.Debug.WriteLine($"Parsed {unclaimedPrize} to {unclaimed} for {game.GameName}, Total: {totalUnclaimed}");
+                                }
+                                else
+                                {
+                                    string cleanedValue = unclaimedPrize.Trim().Replace(",", "");
+                                    if (int.TryParse(cleanedValue, out int parsedValue))
+                                    {
+                                        totalUnclaimed += parsedValue;
+                                        System.Diagnostics.Debug.WriteLine($"Parsed after cleaning {unclaimedPrize} to {parsedValue} for {game.GameName}, Total: {totalUnclaimed}");
+                                    }
+                                    else
+                                    {
+                                        System.Diagnostics.Debug.WriteLine($"Failed to parse {unclaimedPrize} for {game.GameName}");
+                                    }
+                                }
+                            }
+                            game.TotalUnclaimedTopPrizes = totalUnclaimed.ToString();
+
+                            // Calculate tickets made and winning chance
+                            if (double.TryParse(game.PricePoint.TrimStart('$'), out double price) &&
+                                double.TryParse(game.PercentUnsold.TrimEnd('%'), out double unsoldPercent))
+                            {
+                                long ticketsMade = CalculateTicketsMade(price);
+                                long ticketsLeft = (long)(ticketsMade * (unsoldPercent / 100.0));
+
+                                if (totalUnclaimed > 0 && ticketsLeft > 0)
+                                {
+                                    double winningChance = (double)totalUnclaimed / ticketsLeft;
+                                    game.WinningChance = (winningChance * 100).ToString("F2") + "%";
+                                }
+                                else
+                                {
+                                    game.WinningChance = "0.00%"; // If no top prizes or no tickets left
+                                }
+                                System.Diagnostics.Debug.WriteLine($"For {game.GameName}, Tickets Made: {ticketsMade}, Tickets Left: {ticketsLeft}, Winning Chance: {game.WinningChance}");
+                            }
+                            else
+                            {
+                                game.WinningChance = "Data Error";
+                                System.Diagnostics.Debug.WriteLine($"Data error for {game.GameName}");
+                            }
+                        }
+
+                        TicketGame = allGames;
+
                         // Ensure all data operations are complete before notifying UI
                         await Task.Run(() =>
                         {
-                            foreach (var game in TicketGame)
-                            {
-                                if (string.IsNullOrEmpty(game.TotalUnclaimedTopPrizes))
-                                {
-                                    game.TotalUnclaimedTopPrizes = "0"; // Default to 0 if parsing fails
-                                }
-                            }
                             System.Diagnostics.Debug.WriteLine("After Loading: TicketGame count: " + TicketGame.Count);
                             foreach (var game in TicketGame)
                             {
@@ -162,6 +199,28 @@ namespace LottoBreaker.ViewModels
             }
             System.Diagnostics.Debug.WriteLine("LoadDataAsync method completed.");
         }
+
+        // Implement this method according to your logic for ticket production
+        private long CalculateTicketsMade(double pricePoint)
+        {
+            switch (pricePoint)
+            {
+                case 1.00:
+                    return 1_500_000; // Lower priced games might have more tickets
+                case 2.00:
+                    return 1_000_000;
+                case 3.00:
+                    return 800_000;
+                case 5.00:
+                    return 700_000;
+                case 10.00:
+                    return 600_000;
+                case 20.00:
+                    return 500_000;
+                default:
+                    return 1_000_000; // Default case for unknown price points
+            }
+        }
     }
 
     public class TicketGame
@@ -172,7 +231,9 @@ namespace LottoBreaker.ViewModels
         public string PercentUnsold { get; set; }
         public string TotalUnclaimedTopPrizes { get; set; }
         public string WinningChance { get; set; }
+        public ObservableCollection<string> UnclaimedPrizes { get; set; } = new ObservableCollection<string>();
     }
+
     public class TopPrizeInfo
     {
         public string PrizeLevel { get; set; }
